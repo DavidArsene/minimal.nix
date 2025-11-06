@@ -4,60 +4,59 @@
   config,
 }:
 let
-  inherit (lib)
-    mkDefault
-    mkForce
-    mkEnableOption
-    ;
+  inherit (lib) mkDefault mkForce mkEnableOption;
 
   cfg = config.nixos.ensmallen;
 
-  # DISABLE yells to prevent your config
-  # or nixpkgs from changing something.
+  TRUE = mkForce true;
+  FALSE = mkForce false;
+  yeah = mkDefault true;
+  nah = mkDefault false;
+
+  NOTHING = mkForce [ ];
+
+  # Prevent accidental changes.
   DISABLE = {
     enable = FALSE;
   };
 
-  FALSE = mkForce false;
-
   # disable in lowercase is more of a chill guy,
   # he just suggests something be off by default,
   # but doesn't get in your way otherwise.
-
   disable = {
-    enable = mkDefault false;
+    enable = nah;
   };
 
-  ifEnabled = opt: lib.mkIf (opt || cfg.everything);
+  mkIfEnabled = opt: lib.mkIf (opt || cfg.everything);
 in
 {
   options.nixos.ensmallen = {
-    minimalDefault = mkEnableOption "Opinionated sensible defaults" // {
+
+    # TODO: Check these for updates in profiles
+    # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles
+    minimalDefaults = mkEnableOption "Opinionated sensible defaults" // {
       default = true;
     };
 
-    everything = mkEnableOption "Everything this module has to offer";
+    everything = mkEnableOption "Maximum minimalism!";
     experimental = mkEnableOption "Works on my machine";
 
     noDocs = mkEnableOption "Disable documentation";
 
-    plasma6deps = mkEnableOption "Disable some default programs included with Plasma 6." // {
-      default = true;
-      readOnly = true;
-    };
+    plasma6 = mkEnableOption "Exclude a few things bundled with KDE Plasma 6. Not configurable yet.";
 
     # TODO: better description
     noInstallerTools = mkEnableOption "Remove most NixOS installer tools for building VMs, installing new systems, etc.; nixos-rebuild is always kept.";
 
-    noAccessibility =
-      mkEnableOption "Disable accessibility services (screen readers, text-to-speech, etc.)"
-      // {
-        default = true;
-      };
+    noAccessibility = mkEnableOption "For those part of the 99%" // {
+      default = true;
+    };
   };
 
+  imports = [ (mkIfEnabled cfg.plasma6 ./kde.nix) ];
+
   config =
-    ifEnabled cfg.minimalDefault {
+    mkIfEnabled cfg.minimalDefaults {
       # Enabled by desktop environments when needed
       xdg = {
         autostart = disable;
@@ -68,16 +67,18 @@ in
 
       environment = {
         # [ perl rsync strace ]
-        defaultPackages = lib.mkForce [ ];
+        defaultPackages = NOTHING;
 
         stub-ld = disable;
+
+        # TODO: gst-plugins-*
       };
 
       programs = {
         # meh default or not
-        fish.generateCompletions = mkDefault false;
+        fish.generateCompletions = nah;
 
-        # use nix-community/nix-index-database
+        # use github:nix-community/nix-index-database
         command-not-found = DISABLE;
 
         # Other packages depend on normal git
@@ -85,15 +86,10 @@ in
         git.package = pkgs.gitMinimal;
       };
 
-      # Modems? In the Year of our Lord ${year}?
+      # No mobile data around here
       networking.modemmanager = DISABLE;
 
-      # Keyboard still works so /shrug
-      # Maybe on-screen-keyboard / CJK something
-      i18n.inputMethod = DISABLE;
-
       nixpkgs.config = {
-
         # Allowing aliases means nixpkgs will import a module
         # called aliases.nix, in which old versions of packages
         # get either aliased to new ones, or given an error
@@ -109,12 +105,20 @@ in
         # I don't exactly (care to) understand what that means,
         # but maybe has some effect.
         allowVariants = false;
+
+        # Good to have
+        cudaSupport = false;
       };
 
-      # Not related but has the same vibe
-      boot.tmp = {
-        useTmpfs = mkDefault true;
-        tmpfsHugeMemoryPages = "within_size";
+      boot = {
+        bcache = disable;
+        kexec = disable;
+
+        # Not related but has the same vibe
+        tmp = {
+          useTmpfs = yeah;
+          tmpfsHugeMemoryPages = "within_size";
+        };
       };
 
       services = {
@@ -123,57 +127,37 @@ in
 
         # Saving the planet, one paper at a time
         printing = DISABLE;
-
-        desktopManager.plasma6.enableQt5Integration = false;
       };
 
       # something something reducing dependencies on X libs
       security.pam.services.su.forwardXAuth = FALSE;
     }
 
-    // {
-      documentation = ifEnabled cfg.noDocs DISABLE // {
-        doc = DISABLE;
-        info = DISABLE;
-        nixos = DISABLE;
-      }; # TODO: custom top-level
-
-      environment.plasma6.excludePackages = with pkgs.kdePackages; [
-        # aurorae
-        # plasma-browser-integration
-        plasma-workspace-wallpapers
-        # konsole
-        kwin-x11
-        # (lib.getBin qttools) # Expose qdbus in PATH
-        # ark
-        # elisa
-        # gwenview
-        # okular
-        # kate
-        # ktexteditor # provides elevated actions for kate
-        khelpcenter
-        # dolphin
-        # baloo-widgets # baloo information in Dolphin
-        # dolphin-plugins
-        # spectacle
-        ffmpegthumbs
-        krdp
-        xwaylandvideobridge # exposes Wayland windows to X11 screen capture
-      ];
+    // mkIfEnabled cfg.noAccessibility {
 
       services = {
-        orca = ifEnabled cfg.noAccessibility DISABLE; # Screen reader
-        speechd = ifEnabled cfg.noAccessibility DISABLE; # TTS
+        orca = DISABLE; # Screen reader
+        speechd = DISABLE; # TTS
       };
 
       programs = {
-        firefox.wrapperConfig = ifEnabled cfg.noAccessibility {
+        firefox.wrapperConfig = {
           speechSynthesisSupport = false;
         };
       };
 
+      # Keyboard still works so /shrug
+      # Maybe on-screen-keyboard / CJK something
+      i18n.inputMethod = DISABLE;
+
+    }
+
+    // {
+      documentation = mkIfEnabled cfg.noDocs DISABLE;
+      # TODO: custom top-level
+
       # The NixOS installer tools depend on a specific version of nix.
-      system.disableInstallerTools = mkForce ifEnabled cfg.noInstallerTools;
+      system.disableInstallerTools = mkIfEnabled cfg.noInstallerTools TRUE;
 
       # This is about all the ^ option does.
       environment.systemPackages = with pkgs; [
@@ -182,13 +166,13 @@ in
         # nixos-generate-config
         # nixos-install
         # nixos-option
-        nixos-rebuild-ng # Keep this one
+        nixos-rebuild # Keep this one
         # nixos-version
       ];
 
     }
 
-    // ifEnabled cfg.experimental {
+    // mkIfEnabled cfg.experimental {
 
       # "vconsole" is the one with Ctrl+Alt+F1
       # doesn't seem to have side effects
@@ -204,13 +188,26 @@ in
       # An attempt to reduce eval time similar to what allowAliases
       # does for packages, by not parsing all these options found
       # all throughout nixpkgs.
-      lib = lib // {
-        mkAliasOptionModule = (_: null);
-        mkMergedOptionModule = (_: null);
-        mkChangedOptionModule = (_: null);
-        mkRemovedOptionModule = (_: null);
-        mkRenamedOptionModule = (_: null);
-      };
+      lib =
+        let
+          nullFn = lib.const null;
+        in
+        lib
+        // {
+          mkAliasOptionModule = nullFn;
+          mkMergedOptionModule = nullFn;
+          mkChangedOptionModule = nullFn;
+          mkRemovedOptionModule = nullFn;
+          mkRenamedOptionModule = nullFn;
+        };
+
+      # causes mass rebuild :(
+      # replaceStdenv = { pkgs }: pkgs.fastStdenv;
+
+      # !?
+      # assertions = NOTHING;
+      # warnings = NOTHING;
+      # system.checks = NOTHING;
 
       # Ooh this is a good one
       hardware = {
@@ -228,6 +225,8 @@ in
           # Use this to find what's missing. "-b -1" for the
           # previous boot if it fails, "-b" otherwise.
           #
+          # Update: use linux-firmware-minimal from my other repo
+          # for selectively including firmware.
           linux-firmware
 
           # The following firmware packages are redistributable and
@@ -261,6 +260,37 @@ in
         enableAllFirmware = FALSE;
         enableRedistributableFirmware = FALSE;
       };
+
+      nixpkgs.overlays = [
+        (
+          # TODO: so experimental it doesn't even work
+          final: prev:
+          let
+            wrapStdenv =
+              theStdenv:
+              theStdenv
+              // {
+                mkDerivation =
+                  args:
+                  let
+                    drv = theStdenv.mkDerivation args;
+
+                    meta = drv.meta // {
+                      outputsToInstall = lib.remove "man" drv.meta.outputsToInstall;
+                    };
+
+                  in
+                  drv // { inherit meta; };
+              };
+
+          in
+          {
+            stdenv = wrapStdenv prev.stdenv;
+            stdenvNoCC = wrapStdenv prev.stdenvNoCC;
+            # nix = prev.nix.override { withAWS = false; };
+          }
+        )
+      ];
 
     };
 }

@@ -10,12 +10,11 @@
     let
       system = "x86_64-linux";
 
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = nixpkgs.legacyPackages.${system};
       lib = pkgs.lib;
     in
     {
-      nixosModules.default = import ./combined.nix {
-        inherit pkgs lib;
-      };
+      # TODO: automatic parameters
+      nixosModules.default = import ./combined.nix { inherit pkgs lib; };
     };
 }
