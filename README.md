@@ -1,25 +1,31 @@
 # NixOS Minimal
 
-Ensmallen your NixOS system!
+Minify your NixOS system!
 
 ### Usage
 
 You know the drill
 
 ```nix
-inputs.nixos-minimal.follows = "github:me/this";
+{
+  inputs.nixos-minimal.url = "github:me/this";
+  
+  # ...
+  outputs = lib.nixosSystem {
+    # ...
+    modules = [
+      nixos-minimal.nixosModules.default
+  
+      {
+        nixos.minify = {
+          noAccessibility = true;
+          everything = true;
+          # ...
+        };
+      }
 
-lib.nixosSystem {
-	# ...
-	modules = [
-		nixos-minimal.nixosModules.default
-
-		{
-			nixos.ensmallen.noAccessibility = true;
-			# ...
-			nixos.ensmallen.everything = true;
-		}
-	];
+    ];
+  };
 }
 ```
 

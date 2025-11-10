@@ -97,7 +97,7 @@
     # dolphin-plugins
     # spectacle
     ffmpegthumbs
-    krdp
+    # krdp
   ];
 
   services = {

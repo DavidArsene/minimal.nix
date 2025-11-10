@@ -1,12 +1,11 @@
 {
-  pkgs,
-  lib,
   config,
+  lib,
+  pkgs,
+  ...
 }:
 let
   inherit (lib) mkDefault mkForce mkEnableOption;
-
-  cfg = config.nixos.ensmallen;
 
   TRUE = mkForce true;
   FALSE = mkForce false;
@@ -20,17 +19,17 @@ let
     enable = FALSE;
   };
 
-  # disable in lowercase is more of a chill guy,
-  # he just suggests something be off by default,
+  # _disable_ just suggests something be off by default,
   # but doesn't get in your way otherwise.
   disable = {
     enable = nah;
   };
 
+  cfg = config.nixos.minify;
   mkIfEnabled = opt: lib.mkIf (opt || cfg.everything);
 in
 {
-  options.nixos.ensmallen = {
+  options.nixos.minify = {
 
     # TODO: Check these for updates in profiles
     # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles
@@ -43,7 +42,7 @@ in
 
     noDocs = mkEnableOption "Disable documentation";
 
-    plasma6 = mkEnableOption "Exclude a few things bundled with KDE Plasma 6. Not configurable yet.";
+    # plasma6 = mkEnableOption "Exclude a few things bundled with KDE Plasma 6. Not configurable yet.";
 
     # TODO: better description
     noInstallerTools = mkEnableOption "Remove most NixOS installer tools for building VMs, installing new systems, etc.; nixos-rebuild is always kept.";
@@ -51,12 +50,15 @@ in
     noAccessibility = mkEnableOption "For those part of the 99%" // {
       default = true;
     };
+
   };
 
-  imports = [ (mkIfEnabled cfg.plasma6 ./kde.nix) ];
+  # TODO: Fix conditional import
+  imports = [ ./kde.nix ];
 
-  config =
-    mkIfEnabled cfg.minimalDefaults {
+  config = lib.mkMerge [
+    (mkIfEnabled cfg.minimalDefaults {
+
       # Enabled by desktop environments when needed
       xdg = {
         autostart = disable;
@@ -131,9 +133,9 @@ in
 
       # something something reducing dependencies on X libs
       security.pam.services.su.forwardXAuth = FALSE;
-    }
 
-    // mkIfEnabled cfg.noAccessibility {
+    })
+    (mkIfEnabled cfg.noAccessibility {
 
       services = {
         orca = DISABLE; # Screen reader
@@ -150,9 +152,9 @@ in
       # Maybe on-screen-keyboard / CJK something
       i18n.inputMethod = DISABLE;
 
-    }
+    })
+    {
 
-    // {
       documentation = mkIfEnabled cfg.noDocs DISABLE;
       # TODO: custom top-level
 
@@ -171,8 +173,7 @@ in
       ];
 
     }
-
-    // mkIfEnabled cfg.experimental {
+    (mkIfEnabled cfg.experimental {
 
       # "vconsole" is the one with Ctrl+Alt+F1
       # doesn't seem to have side effects
@@ -227,7 +228,7 @@ in
           #
           # Update: use linux-firmware-minimal from my other repo
           # for selectively including firmware.
-          linux-firmware
+          # ! linux-firmware
 
           # The following firmware packages are redistributable and
           # considered useful enough to install by (almost) default.
@@ -242,7 +243,7 @@ in
           # libreelec-dvb-firmware
 
           # And those are for the people who thought "enable"
-          # means enable, not "install something else".
+          # means "allow", not "install something else".
           # FaceTime camera calibration‽ come on.
 
           # broadcom-bt-firmware
@@ -292,5 +293,6 @@ in
         )
       ];
 
-    };
+    })
+  ];
 }

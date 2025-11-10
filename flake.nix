@@ -1,20 +1,11 @@
 {
-  description = "Ensmallen your NixOS system!";
+  description = "Minify your NixOS system!";
 
-  inputs = {
-    nixpkgs.url = "nixpkgs";
-  };
+  inputs.nixpkgs.url = "nixpkgs";
 
   outputs =
-    { nixpkgs, ... }:
-    let
-      system = "x86_64-linux";
-
-      pkgs = nixpkgs.legacyPackages.${system};
-      lib = pkgs.lib;
-    in
+    { self, nixpkgs, ... }:
     {
-      # TODO: automatic parameters
-      nixosModules.default = import ./combined.nix { inherit pkgs lib; };
+      nixosModules.default = ./combined.nix;
     };
 }
