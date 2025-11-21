@@ -27,8 +27,11 @@ let
 
   cfg = config.nixos.minify;
   mkIfEnabled = opt: lib.mkIf (opt || cfg.everything);
+
 in
 {
+  options.comment = lib.mkOption { type = lib.types.anything; };
+
   options.nixos.minify = {
 
     # TODO: Check these for updates in profiles
@@ -54,7 +57,10 @@ in
   };
 
   # TODO: Fix conditional import
-  imports = [ ./kde.nix ];
+  imports = [
+    ./kde.nix
+    # ./nixpkgs/nixos/modules/config/system-path.nix
+  ];
 
   config = lib.mkMerge [
     (mkIfEnabled cfg.minimalDefaults {
@@ -91,7 +97,8 @@ in
       # No mobile data around here
       networking.modemmanager = DISABLE;
 
-      nixpkgs.config = {
+      # Covered by nixpkgs/flake.nix now
+      comment.nixpkgs.config = {
         # Allowing aliases means nixpkgs will import a module
         # called aliases.nix, in which old versions of packages
         # get either aliased to new ones, or given an error
@@ -107,9 +114,6 @@ in
         # I don't exactly (care to) understand what that means,
         # but maybe has some effect.
         allowVariants = false;
-
-        # Good to have
-        cudaSupport = false;
       };
 
       boot = {
@@ -129,10 +133,14 @@ in
 
         # Saving the planet, one paper at a time
         printing = DISABLE;
+
+        dbus.implementation = "broker";
       };
 
       # something something reducing dependencies on X libs
       security.pam.services.su.forwardXAuth = FALSE;
+
+      users.manageLingering = nah;
 
     })
     (mkIfEnabled cfg.noAccessibility {
@@ -153,9 +161,18 @@ in
       i18n.inputMethod = DISABLE;
 
     })
+    (mkIfEnabled cfg.noDocs {
+
+      documentation = DISABLE // {
+        man = DISABLE;
+        info = DISABLE;
+        doc = DISABLE;
+        nixos = DISABLE;
+      };
+
+    })
     {
 
-      documentation = mkIfEnabled cfg.noDocs DISABLE;
       # TODO: custom top-level
 
       # The NixOS installer tools depend on a specific version of nix.
@@ -186,6 +203,20 @@ in
       # maybe I'll regret it some time.
       systemd.coredump.extraConfig = "Storage=none";
 
+      hardware.graphics = {
+        enable32Bit = FALSE;
+        extraPackages = mkForce [ ];
+        extraPackages32 = mkForce [ ];
+      };
+
+      # modules/system/activation/top-level.nix
+      system.systemBuilderArgs = {
+        # Legacy environment variables. These were used by the activation script,
+        # but some other script might still depend on them, although unlikely.
+        localeArchive = mkForce null;
+        perl = mkForce null;
+      };
+
       # An attempt to reduce eval time similar to what allowAliases
       # does for packages, by not parsing all these options found
       # all throughout nixpkgs.
@@ -200,7 +231,7 @@ in
           mkChangedOptionModule = nullFn;
           mkRemovedOptionModule = nullFn;
           mkRenamedOptionModule = nullFn;
-        };
+        }; # FIXME: lib.extend THIS WAS A MISTAKE!
 
       # causes mass rebuild :(
       # replaceStdenv = { pkgs }: pkgs.fastStdenv;
@@ -209,6 +240,11 @@ in
       # assertions = NOTHING;
       # warnings = NOTHING;
       # system.checks = NOTHING;
+
+      # system.activationScripts = {
+      #   hashes = null;
+      #   no-nix-channel = null;
+      # };
 
       # Ooh this is a good one
       hardware = {
@@ -262,7 +298,8 @@ in
         enableRedistributableFirmware = FALSE;
       };
 
-      nixpkgs.overlays = [
+      # n-th try
+      comment.nixpkgs.overlays = [
         (
           # TODO: so experimental it doesn't even work
           final: prev:

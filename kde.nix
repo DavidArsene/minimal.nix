@@ -1,12 +1,13 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
+with pkgs.kdePackages;
 {
   # Special mention to KDE
 
   # Minimal edits to enable more minimalisation
   disabledModules = [ "services/desktop-managers/plasma6.nix" ];
-  imports = [ ./nixos-modules/services/desktop-managers/plasma6.nix ];
+  imports = [ ./nixpkgs/nixos/modules/services/desktop-managers/plasma6.nix ];
 
-  environment.plasma6.excludePackages = with pkgs.kdePackages; [
+  environment.plasma6.excludePackages = [
 
     # Frameworks with globally loadable bits
     # frameworkintegration # provides Qt plugin
@@ -100,13 +101,20 @@
     # krdp
   ];
 
+  # Exclude xdg-desktop-portal-gtk
+  # TODO: exclude not override
+  xdg.portal.extraPortals = lib.mkForce [
+    kwallet
+    xdg-desktop-portal-kde
+  ];
+
   services = {
     desktopManager.plasma6 = {
       enableQt5Integration = false;
       notoPackage = pkgs.noto-fonts-lgc-plus;
     };
 
-    displayManager.sddm.extraPackages = with pkgs.kdePackages; [
+    displayManager.sddm.extraPackages = lib.mkForce [
       breeze-icons
       kirigami
       libplasma
