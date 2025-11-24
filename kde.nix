@@ -39,7 +39,7 @@ with pkgs.kdePackages;
     # kscreen
     # libkscreen
     # kscreenlocker
-    kactivitymanagerd
+    # kactivitymanagerd # cannot be removed
     # kde-cli-tools
     # kglobalacceld # keyboard shortcut daemon
     # kwrited # wall message proxy, not to be confused with kwrite
@@ -89,7 +89,7 @@ with pkgs.kdePackages;
     # ark
     elisa
     # gwenview
-    # okular
+    okular
     # kate
     # ktexteditor # provides elevated actions for kate
     khelpcenter
@@ -114,17 +114,18 @@ with pkgs.kdePackages;
       notoPackage = pkgs.noto-fonts-lgc-plus;
     };
 
-    displayManager.sddm.extraPackages = lib.mkForce [
-      breeze-icons
-      kirigami
-      libplasma
-      # plasma5support
-      qtsvg
-      # qtvirtualkeyboard
-    ];
-
     geoclue2.enable = false;
   };
+
+  # Causes `sddm-unwrapped` to rebuild :(
+  comment.services.displayManager.sddm.extraPackages = lib.mkForce [
+    breeze-icons
+    kirigami
+    libplasma
+    # plasma5support
+    qtsvg
+    # qtvirtualkeyboard
+  ];
 
   programs.kde-pim.enable = false;
 
