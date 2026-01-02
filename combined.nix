@@ -14,13 +14,13 @@ let
 
   NOTHING = mkForce [ ];
 
-  # Prevent accidental changes.
+  #? Prevent accidental changes.
   DISABLE = {
     enable = FALSE;
   };
 
-  # _disable_ just suggests something be off by default,
-  # but doesn't get in your way otherwise.
+  #? _disable_ just suggests something be off by default,
+  #? but doesn't get in your way otherwise.
   disable = {
     enable = nah;
   };
@@ -34,8 +34,8 @@ in
 
   options.nixos.minify = {
 
-    # TODO: Check these for updates in profiles
-    # https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles
+    #! TODO: Check these for updates in profiles
+    #! https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/profiles
     minimalDefaults = mkEnableOption "Opinionated sensible defaults" // {
       default = true;
     };
@@ -58,6 +58,9 @@ in
 
   # TODO: Fix conditional import
   imports = [
+    #! Make sure you add everything you want back!
+    #! The exclude list contains anything I thought
+    #! could be considered non-essential.
     ./kde.nix
     # ./nixpkgs/nixos/modules/config/system-path.nix
   ];
@@ -65,7 +68,7 @@ in
   config = lib.mkMerge [
     (mkIfEnabled cfg.minimalDefaults {
 
-      # Enabled by desktop environments when needed
+      #? Enabled by desktop environments when needed
       xdg = {
         autostart = disable;
         icons = disable;
@@ -74,8 +77,9 @@ in
       };
 
       environment = {
-        # [ perl rsync strace ]
-        defaultPackages = NOTHING;
+        defaultPackages =
+          # [ perl rsync strace ]
+          NOTHING;
 
         stub-ld = disable;
 
@@ -83,36 +87,43 @@ in
       };
 
       programs = {
-        # meh default or not
+        #* meh default or not
         fish.generateCompletions = nah;
 
-        # use github:nix-community/nix-index-database
+        #! use github:nix-community/nix-index-database
         command-not-found = DISABLE;
 
-        # Other packages depend on normal git
-        # anyway, so this is kinda useless.
+        #* Other packages depend on normal git
+        #* anyway, so this is kinda useless.
         git.package = pkgs.gitMinimal;
       };
 
-      # No mobile data around here
+      #? No mobile data around here
       networking.modemmanager = DISABLE;
 
-      # Covered by nixpkgs/flake.nix now
+      nix.settings = {
+        auto-optimise-store = true;
+        build-dir = "/tmp/nixbld"; # FIXME: chmod /tmp 0775
+        builders-use-substitutes = true;
+      };
+      nix.channel = disable;
+
+      #? Covered by nixpkgs/flake.nix now
       comment.nixpkgs.config = {
-        # Allowing aliases means nixpkgs will import a module
-        # called aliases.nix, in which old versions of packages
-        # get either aliased to new ones, or given an error
-        # with the required changes. May require updating configs.
+        #? Allowing aliases means nixpkgs will import a module
+        #? called aliases.nix, in which old versions of packages
+        #? get either aliased to new ones, or given an error
+        #? with the required changes. May require updating configs.
         allowAliases = false;
 
-        # > Variants are instances of the current nixpkgs instance
-        # > with different stdenvs or other applied options.
-        # > This allows for using different toolchains, libcs, or
-        # > global build changes across nixpkgs. Disabling can ensure
-        # > nixpkgs is only building for the platform which you specified.
-        #
-        # I don't exactly (care to) understand what that means,
-        # but maybe has some effect.
+        #? Variants are instances of the current nixpkgs instance
+        #? with different stdenvs or other applied options.
+        #? This allows for using different toolchains, libcs, or
+        #? global build changes across nixpkgs. Disabling can ensure
+        #? nixpkgs is only building for the platform which you specified.
+        #*
+        #* I don't exactly (care to) understand what that means,
+        #* but maybe has some effect.
         allowVariants = false;
       };
 
@@ -120,7 +131,7 @@ in
         bcache = disable;
         kexec = disable;
 
-        # Not related but has the same vibe
+        #? Not related but has the same vibe
         tmp = {
           useTmpfs = yeah;
           tmpfsHugeMemoryPages = "within_size";
@@ -131,13 +142,13 @@ in
         logrotate = disable;
         udisks2 = disable;
 
-        # Saving the planet, one paper at a time
+        #* Saving the planet, one paper at a time
         printing = DISABLE;
 
         dbus.implementation = "broker";
       };
 
-      # something something reducing dependencies on X libs
+      #? something something reducing dependencies on X libs
       security.pam.services.su.forwardXAuth = FALSE;
 
       users.manageLingering = nah;
@@ -146,8 +157,8 @@ in
     (mkIfEnabled cfg.noAccessibility {
 
       services = {
-        orca = DISABLE; # Screen reader
-        speechd = DISABLE; # TTS
+        orca = DISABLE; # ? Screen reader
+        speechd = DISABLE; # ? TTS
       };
 
       programs = {
@@ -156,8 +167,8 @@ in
         };
       };
 
-      # Keyboard still works so /shrug
-      # Maybe on-screen-keyboard / CJK something
+      #* Keyboard still works so /shrug
+      #? Maybe on-screen-keyboard / CJK something
       i18n.inputMethod = DISABLE;
 
     })
@@ -175,33 +186,33 @@ in
 
       # TODO: custom top-level
 
-      # The NixOS installer tools depend on a specific version of nix.
+      # FIXME: The NixOS installer tools depend on a specific version of nix.
       system.disableInstallerTools = mkIfEnabled cfg.noInstallerTools TRUE;
 
-      # This is about all the ^ option does.
+      #? This is about all the old ^ option does.
       environment.systemPackages = with pkgs; [
         # nixos-build-vms
         # nixos-enter
         # nixos-generate-config
         # nixos-install
         # nixos-option
-        nixos-rebuild # Keep this one
+        (nixos-rebuild-ng.override { nix = config.nix.package; }) # ! Keep this one
         # nixos-version
       ];
 
     }
     (mkIfEnabled cfg.experimental {
 
-      # "vconsole" is the one with Ctrl+Alt+F1
-      # doesn't seem to have side effects
-      console = DISABLE;
+      #? "vconsole" is the one with Ctrl+Alt+F1
+      #? doesn't seem to have side effects
+      console.enable = false;
 
-      # I meeeaaaaaan....
+      #* I meeeaaaaaan....
       networking.firewall = DISABLE;
 
-      # Not entirely sure about this,
-      # maybe I'll regret it some time.
-      systemd.coredump.extraConfig = "Storage=none";
+      #* Not entirely sure about this,
+      #* maybe I'll regret it some time.
+      ###! systemd.coredump.extraConfig = "Storage=none";
 
       hardware.graphics = {
         enable32Bit = FALSE;
@@ -209,7 +220,7 @@ in
         extraPackages32 = mkForce [ ];
       };
 
-      # modules/system/activation/top-level.nix
+      #? modules/system/activation/top-level.nix
       system.systemBuilderArgs = {
         # Legacy environment variables. These were used by the activation script,
         # but some other script might still depend on them, although unlikely.
@@ -217,9 +228,9 @@ in
         perl = mkForce null;
       };
 
-      # An attempt to reduce eval time similar to what allowAliases
-      # does for packages, by not parsing all these options found
-      # all throughout nixpkgs.
+      #? An attempt to reduce eval time similar to what allowAliases
+      #? does for packages, by not parsing all these options found
+      #? all throughout nixpkgs.
       lib =
         let
           nullFn = lib.const null;
@@ -233,10 +244,10 @@ in
           mkRenamedOptionModule = nullFn;
         }; # FIXME: lib.extend THIS WAS A MISTAKE!
 
-      # causes mass rebuild :(
+      #* causes mass rebuild :(
       # replaceStdenv = { pkgs }: pkgs.fastStdenv;
 
-      # !?
+      #! ?
       # assertions = NOTHING;
       # warnings = NOTHING;
       # system.checks = NOTHING;
@@ -246,28 +257,45 @@ in
       #   no-nix-channel = null;
       # };
 
-      # Ooh this is a good one
+      #? Similar to hardware.firmware, make sure you
+      #? include all required modules manually.
+      #? These are the default modules:
+      #? https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/system/boot/kernel.nix#L333
+      #? Try removing everything (also from hardware-configuration.nix)
+      #? and see what reason it gives for not being able to mount the root fs.
+      #? This is basically what initrd does: UEFI can only read (V)FAT,
+      #? so only the initrd and kernel are placed in the ESP.
+      #? After the real root fs is mounted by initrd, the kernel
+      #? can load all other modules from there.
+      boot.initrd.includeDefaultModules = false;
+      boot.initrd.availableKernelModules = mkDefault [ ];
+
+      #? This also means that initrd can be removed entirely by
+      #? compiling a custom kernel with the old availableKernelModules.
+      boot.initrd.enable = mkDefault true;
+
+      #* Ooh this is a good one
       hardware = {
         firmware = with pkgs; [
 
-          # The firmware package is huge, and contains firmware
-          # for all devices that Linux has ever supported.
-          #
-          # Until I bother to find a method to detect and separate
-          # only the required firmware for a given device,
-          # the only method is to disable it and see what breaks.
-          #
-          # sudo journalctl -b -1 | rg "Direct firmware load for"
-          #
-          # Use this to find what's missing. "-b -1" for the
-          # previous boot if it fails, "-b" otherwise.
-          #
-          # Update: use linux-firmware-minimal from my other repo
-          # for selectively including firmware.
-          # ! linux-firmware
+          #? The firmware package is huge, and contains firmware
+          #? for all devices that Linux has ever supported.
+          #?
+          #? Until someone bothers to find a method to detect
+          #? only the required firmware for a given device,
+          #? the only method is to disable it and see what breaks.
+          #?
+          #? sudo journalctl -b -1 | rg "Direct firmware load for"
+          #?
+          #? Use this to find what's missing. "-b -1" for the
+          #? previous boot if it fails, "-b" otherwise.
+          #*
+          #* Update: use firmware-minimal from my other repo
+          #* for selectively including firmware.
+          #! linux-firmware
 
-          # The following firmware packages are redistributable and
-          # considered useful enough to install by (almost) default.
+          #? The following firmware packages are redistributable and
+          #? considered useful enough to install by (almost) default.
 
           # intel2200BGFirmware
           # rtl8192su-firmware
@@ -278,9 +306,9 @@ in
           # sof-firmware
           # libreelec-dvb-firmware
 
-          # And those are for the people who thought "enable"
-          # means "allow", not "install something else".
-          # FaceTime camera calibration‽ come on.
+          #? And those are for the people who thought "enable"
+          #? means "allow", not "install something else".
+          #* FaceTime camera calibration‽ come on.
 
           # broadcom-bt-firmware
           # b43Firmware_5_1_138
@@ -289,47 +317,14 @@ in
           # facetimehd-calibration
           # facetimehd-firmware
 
-          # Keep this one. Or don't, I'm not your father.
+          #* Keep this one. Or don't, I'm not your father.
           wireless-regdb
         ];
 
-        # Don't conflict with above
+        #? Don't add them back.
         enableAllFirmware = FALSE;
         enableRedistributableFirmware = FALSE;
       };
-
-      # n-th try
-      comment.nixpkgs.overlays = [
-        (
-          # TODO: so experimental it doesn't even work
-          final: prev:
-          let
-            wrapStdenv =
-              theStdenv:
-              theStdenv
-              // {
-                mkDerivation =
-                  args:
-                  let
-                    drv = theStdenv.mkDerivation args;
-
-                    meta = drv.meta // {
-                      outputsToInstall = lib.remove "man" drv.meta.outputsToInstall;
-                    };
-
-                  in
-                  drv // { inherit meta; };
-              };
-
-          in
-          {
-            stdenv = wrapStdenv prev.stdenv;
-            stdenvNoCC = wrapStdenv prev.stdenvNoCC;
-            # nix = prev.nix.override { withAWS = false; };
-          }
-        )
-      ];
-
     })
   ];
 }

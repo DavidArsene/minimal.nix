@@ -28,14 +28,15 @@ rec {
           config.nixpkgs = {
             flake.source = nixpkgs;
 
-            # Locked by readOnlyPkgs
+            #? Locked and set by readOnlyPkgs,
+            #? based on pkgs.system.
             # hostPlatform = system;
 
-            # Usually, lib.nixosSystem doesn't go through legacyPackages,
-            # relying on modules/misc/nixpkgs.nix instead. This is the root
-            # cause of why nixpkgs.config is not applied for other nixpkgs
-            # instances. Change it here to use one unified config, and then
-            # pass any nixpkgs to this flake's inputs.
+            #? Usually, lib.nixosSystem doesn't go through legacyPackages,
+            #? relying on modules/misc/nixpkgs.nix instead. This is the root
+            #? cause of why nixpkgs.config is not applied for other nixpkgs
+            #? instances. Change it here to use one unified config, and then
+            #? pass any nixpkgs to this flake's inputs.
             pkgs = lib.mkDefault legacyPackages.${system};
           };
         }
@@ -43,9 +44,9 @@ rec {
 
       config = import (nixpkgs + /nixos/lib/eval-config.nix) (
 
-        # If args comes first, before //, then `modules` from below
-        # overrides its own, removing the need for removeAttrs.
-        # Why isn't this used elsewhere?
+        #? If args comes first, before //, then `modules` from below
+        #? overrides its own, removing the need for removeAttrs.
+        #! Why isn't this used elsewhere?
         args
         // {
 
@@ -82,7 +83,14 @@ rec {
           substr = s: l: lib.substring s l date;
           pretty = "${substr 0 4}/${substr 4 2}/${substr 6 2}";
         in
-        builtins.trace "minimal.nix: new pkgs instance for ${system} from ${nixpkgs} on ${pretty}." betterDefaultConfig;
+        builtins.trace ''
+
+
+          minimal.nix - new nixpkgs instance created:
+            system = ${system}
+            src = ${nixpkgs}
+            modified = ${pretty}
+        '' betterDefaultConfig;
 
       # overlays =
       # Unneeded in pure evaluation mode

@@ -94,22 +94,6 @@ in
         '';
       };
 
-      defaultPackages = lib.mkOption {
-        type = lib.types.listOf lib.types.package;
-        default = [ ];
-        description = ''
-          Set of default packages that aren't strictly necessary
-          for a running system, entries can be removed for a more
-          minimal NixOS installation.
-
-          Like with systemPackages, packages are installed to
-          {file}`/run/current-system/sw`. They are
-          automatically available to all users, and are
-          automatically updated every time you rebuild the system
-          configuration.
-        '';
-      };
-
       pathsToLink = lib.mkOption {
         type = lib.types.listOf lib.types.str;
         # Note: We need `/lib' to be among `pathsToLink' for NSS modules
@@ -117,22 +101,6 @@ in
         default = [ ];
         example = [ "/" ];
         description = "List of directories to be symlinked in {file}`/run/current-system/sw`.";
-      };
-
-      extraOutputsToInstall = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [ ];
-        example = [
-          "dev"
-          "info"
-        ];
-        description = ''
-          Entries listed here will be appended to the `meta.outputsToInstall` attribute for each package in `environment.systemPackages`, and the files from the corresponding derivation outputs symlinked into {file}`/run/current-system/sw`.
-
-          For example, this can be used to install the `dev` and `info` outputs for all packages in the system environment, if they are available.
-
-          To use specific outputs instead of configuring them globally, select the corresponding attribute on the package derivation, e.g. `libxml2.dev` or `coreutils.info`.
-        '';
       };
 
       extraSetup = lib.mkOption {
@@ -164,7 +132,7 @@ in
     # merging.
     environment.corePackages = corePackages;
 
-    environment.systemPackages = config.environment.corePackages ++ config.environment.defaultPackages;
+    environment.systemPackages = config.environment.corePackages; # ++ config.environment.defaultPackages;
 
     environment.pathsToLink = [
       "/bin"
@@ -205,11 +173,17 @@ in
             warn "[unmanned] ${pkg.name}\t has no meta.outputsToInstall" pkg
         ) paths;
 
+        # +------------------------------------------------------------+
+        # ! Or just change the original check-meta.nix with rw-store.  !
+        # ! If it complains about nixpkgs' narHash, then just          !
+        # ! manually edit flake.lock to set it to the suggested value. !
+        # +------------------------------------------------------------+
+
       in
       pkgs.buildEnv {
         name = "system-path-woke";
         paths = lib.trace "[unmanned] Constructing path..." pathsFinal;
-        inherit (config.environment) pathsToLink extraOutputsToInstall;
+        inherit (config.environment) pathsToLink;
         ignoreCollisions = true;
         # !!! Hacky, should modularise.
         # outputs TODO: note that the tools will often not be linked by default
