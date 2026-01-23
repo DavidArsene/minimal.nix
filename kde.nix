@@ -5,7 +5,7 @@ with pkgs.kdePackages;
 
   #? Minimal edits to enable more minimalisation
   disabledModules = [ "services/desktop-managers/plasma6.nix" ];
-  imports = [ ./nixpkgs/nixos/modules/services/desktop-managers/plasma6.nix ];
+  imports = [ ./impl/plasma6.nix ];
 
   environment.plasma6.excludePackages = [
 
@@ -113,7 +113,7 @@ with pkgs.kdePackages;
       enableQt5Integration = false;
 
       #? Smaller font package without CJK
-      notoPackage = pkgs.noto-fonts-lgc-plus;
+      #! notoPackage = pkgs.noto-fonts-lgc-plus;
     };
 
     geoclue2.enable = false;

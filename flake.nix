@@ -6,7 +6,11 @@
     {
       #? The main entry point for this flake.
       #? Just import as NixOS module, no nixpkgs required.
-      nixosModules.default = ./combined.nix;
+      nixosModules = {
+        main = ./main.nix;
+        kde = ./kde.nix;
+        systemPath = ./system-path.nix;
+      };
 
       #? Pass a stock nixpkgs input to get a custom one with:
       #?  - pre-configured allowUnfree

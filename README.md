@@ -14,7 +14,18 @@ You know the drill
   outputs = lib.nixosSystem {
     # ...
     modules = [
-      nixos-minimal.nixosModules.default
+    
+      # Change NixOS option defaults towards minimalism
+      nixos-minimal.nixosModules.main
+      
+      # Make all KDE components optional
+      # Cannot be used as-is, add back required packages
+      nixos-minimal.nixosModules.kde
+      
+      # Custom environment.systemPackages that does not
+      # install the "man" output for all packages, and
+      # removes it when it is installed by default.
+      nixos-minimal.nixosModules.systemPath
   
       {
         nixos.minify = {
@@ -28,5 +39,3 @@ You know the drill
   };
 }
 ```
-
-Reading source code strongly recommended.

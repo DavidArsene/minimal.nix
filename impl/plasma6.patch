@@ -1,10 +1,11 @@
+$ patch --backup --verbose < plasma6.patch
 Index: plasma6.nix
 IDEA additional info:
 Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
-diff --git a/plasma6.nix b/plasma6.nix
---- a/plasma6.nix	(date 1762451126558)
+diff --git a/plasma6.orig.nix b/plasma6.nix
+--- a/plasma6.orig.nix
 +++ b/plasma6.nix
 @@ -73,7 +73,7 @@
      environment.systemPackages =

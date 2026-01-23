@@ -45,25 +45,13 @@ in
 
     noDocs = mkEnableOption "Disable documentation";
 
-    # plasma6 = mkEnableOption "Exclude a few things bundled with KDE Plasma 6. Not configurable yet.";
-
     # TODO: better description
     noInstallerTools = mkEnableOption "Remove most NixOS installer tools for building VMs, installing new systems, etc.; nixos-rebuild is always kept.";
 
-    noAccessibility = mkEnableOption "For those part of the 99%" // {
+    noAccessibility = mkEnableOption "For the 99%" // {
       default = true;
     };
-
   };
-
-  # TODO: Fix conditional import
-  imports = [
-    #! Make sure you add everything you want back!
-    #! The exclude list contains anything I thought
-    #! could be considered non-essential.
-    ./kde.nix
-    # ./nixpkgs/nixos/modules/config/system-path.nix
-  ];
 
   config = lib.mkMerge [
     (mkIfEnabled cfg.minimalDefaults {
@@ -116,11 +104,11 @@ in
         #? with the required changes. May require updating configs.
         allowAliases = false;
 
-        #? Variants are instances of the current nixpkgs instance
+        #? `Variants are instances of the current nixpkgs instance
         #? with different stdenvs or other applied options.
         #? This allows for using different toolchains, libcs, or
         #? global build changes across nixpkgs. Disabling can ensure
-        #? nixpkgs is only building for the platform which you specified.
+        #? nixpkgs is only building for the platform which you specified.`
         #*
         #* I don't exactly (care to) understand what that means,
         #* but maybe has some effect.
@@ -141,9 +129,7 @@ in
       services = {
         logrotate = disable;
         udisks2 = disable;
-
-        #* Saving the planet, one paper at a time
-        printing = DISABLE;
+        printing = disable;
 
         dbus.implementation = "broker";
       };
@@ -167,9 +153,10 @@ in
         };
       };
 
-      #* Keyboard still works so /shrug
-      #? Maybe on-screen-keyboard / CJK something
-      i18n.inputMethod = DISABLE;
+      #? For "virtual keyboard"s,
+      #? like those used by CJK
+      #? or typing-booster.
+      i18n.inputMethod = disable;
 
     })
     (mkIfEnabled cfg.noDocs {
@@ -186,7 +173,6 @@ in
 
       # TODO: custom top-level
 
-      # FIXME: The NixOS installer tools depend on a specific version of nix.
       system.disableInstallerTools = mkIfEnabled cfg.noInstallerTools TRUE;
 
       #? This is about all the old ^ option does.
@@ -196,8 +182,14 @@ in
         # nixos-generate-config
         # nixos-install
         # nixos-option
-        (nixos-rebuild-ng.override { nix = config.nix.package; }) # ! Keep this one
         # nixos-version
+
+        #! Keep this one
+        (nixos-rebuild-ng.override {
+          #? Use the system's nix package.
+          #? It's just a python script anyway
+          nix = config.nix.package;
+        })
       ];
 
     }
@@ -205,25 +197,25 @@ in
 
       #? "vconsole" is the one with Ctrl+Alt+F1
       #? doesn't seem to have side effects
-      console.enable = false;
+      console = disable;
 
       #* I meeeaaaaaan....
       networking.firewall = DISABLE;
 
       #* Not entirely sure about this,
       #* maybe I'll regret it some time.
-      ###! systemd.coredump.extraConfig = "Storage=none";
+      #! systemd.coredump.extraConfig = "Storage=none";
 
       hardware.graphics = {
         enable32Bit = FALSE;
-        extraPackages = mkForce [ ];
-        extraPackages32 = mkForce [ ];
+        extraPackages = NOTHING;
+        extraPackages32 = NOTHING;
       };
 
       #? modules/system/activation/top-level.nix
       system.systemBuilderArgs = {
-        # Legacy environment variables. These were used by the activation script,
-        # but some other script might still depend on them, although unlikely.
+        # `Legacy environment variables. These were used by the activation script,
+        # but some other script might still depend on them, although unlikely.`
         localeArchive = mkForce null;
         perl = mkForce null;
       };
