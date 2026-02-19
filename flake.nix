@@ -17,6 +17,6 @@
       #?  - readOnlyPkgs module
       #?  - nixosSystem that uses legacyPackages
       #?  - possibly more in the future
-      wrapNixpkgs = lowerpkgs: import ./nixpkgs lowerpkgs;
+      wrapNixpkgs = lowerpkgs: import ./nixpkgs.nix lowerpkgs;
     };
 }
