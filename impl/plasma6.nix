@@ -73,7 +73,7 @@ in
     environment.systemPackages =
       with kdePackages;
       let
-        optionalPackages = [
+        requiredPackages = [
           qtwayland # Hack? To make everything run on Wayland
           qtsvg # Needed to render SVG icons
 
@@ -146,9 +146,8 @@ in
           libksysguard
           systemsettings
           kcmutils
-        ]
-        # optionalPackages =
-        ++ [
+        ];
+        optionalPackages = [
           aurorae
           plasma-browser-integration
           plasma-workspace-wallpapers
@@ -168,19 +167,22 @@ in
           spectacle
           ffmpegthumbs
           krdp
+          kconfig # required for xdg-terminal from xdg-utils
+          qtbase # for qtpaths which is required for xdg-mime from xdg-utils
         ]
         ++ lib.optionals config.hardware.sensor.iio.enable [
           # This is required for autorotation in Plasma 6
           qtsensors
         ]
-        ++ lib.optionals config.services.flatpak.enable [
+        ++ lib.optionals (config.services.flatpak.enable || config.services.fwupd.enable) [
           # Since PackageKit Nix support is not there yet,
-          # only install discover if flatpak is enabled.
+          # only install discover if flatpak or fwupd is enabled.
           discover
         ];
       in
-      [ ]
-      ++ utils.removePackagesByName optionalPackages config.environment.plasma6.excludePackages
+      utils.removePackagesByName (
+        requiredPackages ++ optionalPackages
+      ) config.environment.plasma6.excludePackages
       ++ lib.optionals config.services.desktopManager.plasma6.enableQt5Integration [
         breeze.qt5
         plasma-integration.qt5
@@ -211,6 +213,10 @@ in
       ++ lib.optional config.services.pipewire.pulse.enable plasma-pa
       ++ lib.optional config.powerManagement.enable powerdevil
       ++ lib.optional config.services.printing.enable print-manager
+      ++ lib.optionals config.hardware.sane.enable [
+        skanlite
+        skanpage
+      ]
       ++ lib.optional config.services.colord.enable colord-kde
       ++ lib.optional config.services.hardware.bolt.enable plasma-thunderbolt
       ++ lib.optional config.services.samba.enable kdenetwork-filesharing
@@ -269,6 +275,7 @@ in
     services.upower.enable = config.powerManagement.enable;
     services.libinput.enable = mkDefault true;
     services.geoclue2.enable = mkDefault true;
+    services.fwupd.enable = mkDefault true;
 
     # Extra UDEV rules used by Solid
     services.udev.packages = [
@@ -278,8 +285,8 @@ in
     ];
 
     # Set up Dr. Konqi as crash handler
-    #! systemd.packages = [ kdePackages.drkonqi ];
-    #! systemd.services."drkonqi-coredump-processor@".wantedBy = [ "systemd-coredump@.service" ];
+    systemd.packages = [ kdePackages.drkonqi ];
+    systemd.services."drkonqi-coredump-processor@".wantedBy = [ "systemd-coredump@.service" ];
 
     xdg.icons.enable = true;
     xdg.icons.fallbackCursorThemes = mkDefault [ "breeze_cursors" ];
@@ -328,9 +335,19 @@ in
           enable = true;
           package = kdePackages.kwallet-pam;
         };
+        # "kde" must not have fingerprint authentication otherwise it can block password login.
+        # See https://github.com/NixOS/nixpkgs/issues/239770 and https://invent.kde.org/plasma/kscreenlocker/-/merge_requests/163.
+        fprintAuth = false;
+        p11Auth = false;
       };
-      kde-fingerprint = lib.mkIf config.services.fprintd.enable { fprintAuth = true; };
-      kde-smartcard = lib.mkIf config.security.pam.p11.enable { p11Auth = true; };
+      kde-fingerprint = lib.mkIf config.services.fprintd.enable {
+        fprintAuth = true;
+        p11Auth = false;
+      };
+      kde-smartcard = lib.mkIf config.security.pam.p11.enable {
+        p11Auth = true;
+        fprintAuth = false;
+      };
     };
 
     security.wrappers = {

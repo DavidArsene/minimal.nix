@@ -65,10 +65,6 @@ in
       };
 
       environment = {
-        defaultPackages =
-          # [ perl rsync strace ]
-          NOTHING;
-
         stub-ld = disable;
 
         # TODO: gst-plugins-*
