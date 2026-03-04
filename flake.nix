@@ -11,12 +11,5 @@
         kde = ./kde.nix;
         systemPath = ./system-path.nix;
       };
-
-      #? Pass a stock nixpkgs input to get a custom one with:
-      #?  - pre-configured allowUnfree
-      #?  - readOnlyPkgs module
-      #?  - nixosSystem that uses legacyPackages
-      #?  - possibly more in the future
-      wrapNixpkgs = lowerpkgs: import ./nixpkgs.nix lowerpkgs;
     };
 }
