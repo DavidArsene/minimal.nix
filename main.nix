@@ -203,9 +203,9 @@ in
       #! systemd.coredump.extraConfig = "Storage=none";
 
       hardware.graphics = {
-        enable32Bit = FALSE;
-        extraPackages = NOTHING;
-        extraPackages32 = NOTHING;
+        # enable32Bit = FALSE;
+        # extraPackages = NOTHING;
+        # extraPackages32 = NOTHING;
       };
 
       #? modules/system/activation/top-level.nix
@@ -232,7 +232,7 @@ in
           mkRenamedOptionModule = nullFn;
         }; # FIXME: lib.extend THIS WAS A MISTAKE!
 
-      #* causes mass rebuild :(
+      #* causes mass rebuild
       # replaceStdenv = { pkgs }: pkgs.fastStdenv;
 
       #! ?
@@ -240,10 +240,10 @@ in
       # warnings = NOTHING;
       # system.checks = NOTHING;
 
-      # system.activationScripts = {
-      #   hashes = null;
-      #   no-nix-channel = null;
-      # };
+      system.activationScripts = {
+        hashes = mkForce "";
+        no-nix-channel = mkForce "";
+      };
 
       #? Similar to hardware.firmware, make sure you
       #? include all required modules manually.
