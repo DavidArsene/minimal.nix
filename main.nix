@@ -92,25 +92,6 @@ in
       };
       nix.channel = disable;
 
-      #? Covered by nixpkgs/flake.nix now
-      comment.nixpkgs.config = {
-        #? Allowing aliases means nixpkgs will import a module
-        #? called aliases.nix, in which old versions of packages
-        #? get either aliased to new ones, or given an error
-        #? with the required changes. May require updating configs.
-        allowAliases = false;
-
-        #? `Variants are instances of the current nixpkgs instance
-        #? with different stdenvs or other applied options.
-        #? This allows for using different toolchains, libcs, or
-        #? global build changes across nixpkgs. Disabling can ensure
-        #? nixpkgs is only building for the platform which you specified.`
-        #*
-        #* I don't exactly (care to) understand what that means,
-        #* but maybe has some effect.
-        allowVariants = false;
-      };
-
       boot = {
         bcache = disable;
         kexec = disable;
