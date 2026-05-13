@@ -7,8 +7,6 @@ with pkgs.kdePackages;
   disabledModules = [ "services/desktop-managers/plasma6.nix" ];
   imports = [ ./impl/plasma6.nix ];
 
-  environment.plasma6.excludePackages = [ ];
-
   #? Exclude xdg-desktop-portal-gtk
   # TODO: exclude not override
   xdg.portal.extraPortals = lib.mkForce [
