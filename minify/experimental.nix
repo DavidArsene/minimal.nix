@@ -14,10 +14,6 @@ with bil;
     #* I meeeaaaaaan....
     networking.firewall = DISABLE;
 
-    #* Not entirely sure about this,
-    #* maybe I'll regret it some time.
-    #! systemd.coredump.extraConfig = "Storage=none";
-
     # TODO?: fonts.enableDefaultFonts = FALSE;
 
     # TODO: replacement
@@ -40,38 +36,34 @@ with bil;
         no-nix-channel = mkForce "";
       };
 
-      replaceDependencies.replacements = [
-        /*
+      #! NOTE: Uses IFD! Will build the whole system as a dependency of
+      #! the packages it affects, then it will "rebuild" them by just
+      #! replacing the store paths.
+      #! It will not save you from downloading the original package tho,
+      #! but rather affect the resulting closure (or disk size after gc)
+
+      # with lib; attrNames pkgs |> filter (hasSuffix "Minimal")
+      replaceDependencies.replacements = mkIf (builtins.getEnv "NIXOS_MINIFY_REPLACE_DEPS" == "1") (
+        builtins.trace "IFD-based dependency replacements enabled." [
           {
-            oldDependency = pkgs.openssl;
-            newDependency = pkgs.callPackage /path/to/openssl { };
+            oldDependency = pkgs.ibus;
+            #! NOTE: pname is still "ibus",
+            #! unlike git which has "git-minimal".
+            #! They need to be the same length!
+            newDependency = pkgs.ibusMinimal;
           }
           {
-            oldDependency = pkgs.glibc;
-            newDependency = pkgs.callPackage /path/to/glibc { };
+            oldDependency = pkgs.nix;
+            newDependency = config.nix.package;
           }
-        */
-      ];
+        ]
+      );
     };
 
-    #? An attempt to reduce eval time similar to what allowAliases
-    #? does for packages, by not parsing all these options found
-    #? all throughout nixpkgs.
-    /*
-      lib =
-      let
-        nullFn = lib.const null;
-      in
-      lib
-      // {
-        mkAliasOptionModule = nullFn;
-        mkMergedOptionModule = nullFn;
-        mkChangedOptionModule = nullFn;
-        mkRemovedOptionModule = nullFn;
-        mkRenamedOptionModule = nullFn;
-      };
-    */
-    # FIXME: extend THIS WAS A MISTAKE! - move to wrapper extend
+    comment.replaceDepsz = {
+      ibus = pkgs.ibusMinimal;
+      nix = config.nix.package;
+    };
 
     #* causes mass rebuild
     # replaceStdenv = { pkgs }: pkgs.fastStdenv;

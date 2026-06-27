@@ -38,22 +38,37 @@ with bil;
 
     nix.settings = {
       auto-optimise-store = true;
-      build-dir = /tmp/nixbld; # FIXME: chmod /tmp 0775
       builders-use-substitutes = true;
     };
     nix.channel = disable;
+
+    #? Works better than nix.settings.build-dir = /tmp,
+    #? because /tmp neeeds to be world-writable.
+    fileSystems."/nix/var/nix/builds" = {
+      device = "tmpfs";
+      fsType = "tmpfs";
+      options = [
+        "noatime"
+        "size=32G"
+        "mode=1755"
+      ];
+    };
 
     boot = {
       bcache = disable;
       kexec = disable;
 
-      #? Not related but has the same vibe
       tmp = {
         useTmpfs = yeah;
         tmpfsHugeMemoryPages = "within_size";
+        # useZram = true; FIXME
+        # zramSettings = {
+        #   zram-size = "100%";
+        #   fs-type = "tmpfs?";
+        # };
       };
-    };
 
+    };
     services = {
       logrotate = disable;
       udisks2 = disable;

@@ -19,6 +19,18 @@ with bil;
 
       #! Keep this one
       nixos-rebuild-ng
+      /*
+        (
+          (nixos-rebuild-ng.overrideAttrs {
+            doCheck = false;
+          }).override
+          {
+            #? Use the system's nix package.
+            #? It's just a python script anyway
+            nix = config.nix.package;
+          }
+        )
+      */
     ];
   };
 }
