@@ -1,7 +1,4 @@
-bil:
-with bil;
-{ config, ... }:
-{
+bil: with bil; { config, ... }: {
   options.nixos.minify.no32BitGraphics = mkEnableOption "Disable 32-bit graphics support";
 
   config = mkIf config.nixos.minify.no32BitGraphics {
@@ -9,9 +6,7 @@ with bil;
       let
         nvPkg = config.boot.kernelPackages.nvidiaPackages.bleeding_edge;
       in
-      nvPkg.override {
-        disable32Bit = true;
-      };
+      mkForce (nvPkg.override { disable32Bit = true; });
 
     hardware.graphics = {
       enable32Bit = FALSE;

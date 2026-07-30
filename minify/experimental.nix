@@ -4,12 +4,19 @@ with bil;
 
 {
   options.nixos.minify.experimental = mkEnableOption "Works on my machine";
+  options.nixos.minify.depsToReplace = mkOption {
+    description = "Dependencies to replace using IFD (only when enabled).";
+    # type = types.;
+    default = {
+      #! NOTE: pname is still "ibus", unlike git and "git-minimal".
+      #! They need to be the same length!
+      ibus = pkgs.ibusMinimal;
+
+      nix = config.nix.package;
+    };
+  };
 
   config = mkIf config.nixos.minify.experimental {
-
-    #? "vconsole" is the one with Ctrl+Alt+F1
-    #? doesn't seem to have side effects
-    console = disable;
 
     #* I meeeaaaaaan....
     networking.firewall = DISABLE;
@@ -25,8 +32,8 @@ with bil;
     system = {
       #? modules/system/activation/top-level.nix
       systemBuilderArgs = {
-        # `Legacy environment variables. These were used by the activation script,
-        # but some other script might still depend on them, although unlikely.`
+        # > Legacy environment variables. These were used by the activation script,
+        # > but some other script might still depend on them, although unlikely.
         localeArchive = mkForce null;
         perl = mkForce null;
       };
@@ -44,25 +51,13 @@ with bil;
 
       # with lib; attrNames pkgs |> filter (hasSuffix "Minimal")
       replaceDependencies.replacements = mkIf (builtins.getEnv "NIXOS_MINIFY_REPLACE_DEPS" == "1") (
-        builtins.trace "IFD-based dependency replacements enabled." [
-          {
-            oldDependency = pkgs.ibus;
-            #! NOTE: pname is still "ibus",
-            #! unlike git which has "git-minimal".
-            #! They need to be the same length!
-            newDependency = pkgs.ibusMinimal;
-          }
-          {
-            oldDependency = pkgs.nix;
-            newDependency = config.nix.package;
-          }
-        ]
+        builtins.trace "IFD-based dependency replacements enabled." (
+          mapAttrsToList (k: v: {
+            oldDependency = pkgs.${k};
+            newDependency = v;
+          }) config.nixos.minify.depsToReplace
+        )
       );
-    };
-
-    comment.replaceDepsz = {
-      ibus = pkgs.ibusMinimal;
-      nix = config.nix.package;
     };
 
     #* causes mass rebuild
@@ -91,6 +86,17 @@ with bil;
       #? compiling a custom kernel with the old availableKernelModules.
       enable = yeah;
     };
+
+    # watchdog
+    boot.blacklistedKernelModules = [ "sp5100_tco" ];
+
+    boot.kernelParams = [
+      # TODO: slower on Zen 4?
+      "mitigations=off"
+      "nowatchdog"
+      # Disable SSD power-saving for lower latency
+      # "nvme_core.default_ps_max_latency_us=0"
+    ];
 
     #* Ooh this is a good one
     hardware = {

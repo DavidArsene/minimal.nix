@@ -8,19 +8,20 @@ let
   man-eater =
     pkg:
 
-    if !(pkg.meta ? outputsToInstall) then
-      lib.warn "[man-eater] ${pkg.name} has no meta.outputsToInstall" pkg
+    # a few qt libraries don't have pkg.meta.outputsToInstall !?
+    # (builtins.trace "no oTI in ${pkg.name}" [ ])
+    if (lib.elem "man" pkg.meta.outputsToInstall or [ ]) then
 
-    else if !(lib.elem "man" pkg.meta.outputsToInstall) then
-      pkg
-
-    else
-      pkg.overrideAttrs (prev: {
-        meta = prev.meta // {
+      pkg.overrideAttrs {
+        # doCheck = false;
+        meta = pkg.meta // {
           # prev.meta sometimes doesn't include outputsToInstall !?
           outputsToInstall = lib.remove "man" pkg.meta.outputsToInstall;
         };
-      });
+      }
+
+    else
+      pkg;
 in
 {
   environment.defaultPackages = lib.mkForce [ ];
@@ -31,6 +32,7 @@ in
 
       paths = map man-eater config.environment.systemPackages;
 
+      # * The rest is from the original module.
       inherit (config.environment) pathsToLink extraOutputsToInstall;
       ignoreCollisions = true;
 

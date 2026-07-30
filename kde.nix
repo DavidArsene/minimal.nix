@@ -5,7 +5,7 @@ with pkgs.kdePackages;
 
   #? Minimal edits to enable more minimalisation
   disabledModules = [ "services/desktop-managers/plasma6.nix" ];
-  imports = [ ./impl/plasma6.nix ];
+  imports = [ ./kde/plasma6.nix ];
 
   #? Exclude xdg-desktop-portal-gtk
   # TODO: exclude not override
