@@ -60,6 +60,10 @@ with bil;
       );
     };
 
+    # TODO:
+    # security.account-utils.enable = true;
+    # security.shadow.enable = false;
+
     #* causes mass rebuild
     # replaceStdenv = { pkgs }: pkgs.fastStdenv;
 
