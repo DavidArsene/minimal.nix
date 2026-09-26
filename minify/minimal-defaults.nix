@@ -16,9 +16,8 @@ with bil;
     };
 
     environment = {
+      defaultPackages = mkForce [ ];
       stub-ld = disable;
-
-      # TODO: gst-plugins-*
     };
 
     programs = {
@@ -36,11 +35,18 @@ with bil;
     #? No mobile data around here
     networking.modemmanager = DISABLE;
 
-    nix.settings = {
-      auto-optimise-store = true;
-      builders-use-substitutes = true;
+    nix = {
+      settings = {
+        auto-optimise-store = true;
+        builders-use-substitutes = true;
+      };
+      channel = disable;
+
+      #! Not worth it. Works, but all programs accessing nix
+      #! (like fastfetch or nixd) end up requiring sudo.
+      #* Worthy trade-off?
+      # daemon = disable;
     };
-    nix.channel = disable;
 
     #? Works better than nix.settings.build-dir = /tmp,
     #? because /tmp neeeds to be world-writable.
@@ -52,6 +58,21 @@ with bil;
         "size=32G"
         "mode=1755"
       ];
+    };
+
+    system = {
+      #? modules/system/activation/top-level.nix
+      systemBuilderArgs = {
+        # > Legacy environment variables. These were used by the activation script,
+        # > but some other script might still depend on them, although unlikely.
+        localeArchive = mkForce null;
+        perl = mkForce null;
+      };
+
+      activationScripts = {
+        hashes = mkForce "";
+        no-nix-channel = mkForce "";
+      };
     };
 
     boot = {
@@ -69,6 +90,7 @@ with bil;
       };
 
     };
+
     services = {
       logrotate = disable;
       udisks2 = disable;

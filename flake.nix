@@ -7,7 +7,6 @@
     nixosModules = {
       main = ./main.nix;
       kde = ./kde.nix;
-      systemPath = ./system-path.nix;
     };
   };
 }

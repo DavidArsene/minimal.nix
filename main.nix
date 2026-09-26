@@ -25,13 +25,6 @@ in
 {
 
   # FIXME: importing imports meh
-  imports = [
-    (import ./minify/everything.nix bil)
-    (import ./minify/minimal-defaults.nix bil)
-    (import ./minify/no-accessibility.nix bil)
-    (import ./minify/no-docs.nix bil)
-    (import ./minify/no-32bit-graphics.nix bil)
-    (import ./minify/no-installer-tools.nix bil)
-    (import ./minify/experimental.nix bil)
-  ];
+  # NOTE: lib.pipe doesn't work
+  imports = builtins.readDir ./minify |> builtins.attrNames |> map (mod: import ./minify/${mod} bil);
 }

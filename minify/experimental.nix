@@ -4,17 +4,6 @@ with bil;
 
 {
   options.nixos.minify.experimental = mkEnableOption "Works on my machine";
-  options.nixos.minify.depsToReplace = mkOption {
-    description = "Dependencies to replace using IFD (only when enabled).";
-    # type = types.;
-    default = {
-      #! NOTE: pname is still "ibus", unlike git and "git-minimal".
-      #! They need to be the same length!
-      ibus = pkgs.ibusMinimal;
-
-      nix = config.nix.package;
-    };
-  };
 
   config = mkIf config.nixos.minify.experimental {
 
@@ -29,43 +18,9 @@ with bil;
 
     # TODO: custom top-level
 
-    system = {
-      #? modules/system/activation/top-level.nix
-      systemBuilderArgs = {
-        # > Legacy environment variables. These were used by the activation script,
-        # > but some other script might still depend on them, although unlikely.
-        localeArchive = mkForce null;
-        perl = mkForce null;
-      };
-
-      activationScripts = {
-        hashes = mkForce "";
-        no-nix-channel = mkForce "";
-      };
-
-      #! NOTE: Uses IFD! Will build the whole system as a dependency of
-      #! the packages it affects, then it will "rebuild" them by just
-      #! replacing the store paths.
-      #! It will not save you from downloading the original package tho,
-      #! but rather affect the resulting closure (or disk size after gc)
-
-      # with lib; attrNames pkgs |> filter (hasSuffix "Minimal")
-      replaceDependencies.replacements = mkIf (builtins.getEnv "NIXOS_MINIFY_REPLACE_DEPS" == "1") (
-        builtins.trace "IFD-based dependency replacements enabled." (
-          mapAttrsToList (k: v: {
-            oldDependency = pkgs.${k};
-            newDependency = v;
-          }) config.nixos.minify.depsToReplace
-        )
-      );
-    };
-
     # TODO:
     # security.account-utils.enable = true;
     # security.shadow.enable = false;
-
-    #* causes mass rebuild
-    # replaceStdenv = { pkgs }: pkgs.fastStdenv;
 
     #! ?
     # assertions = NOTHING;
